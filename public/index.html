@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>专注时长追踪日历</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      body {
+        background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+        color: #333;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      #app {
+        width: 100%;
+        max-width: 1200px;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        padding: 30px;
+        backdrop-filter: blur(10px);
+        display: grid;
+        grid-template-columns: 1fr 1.5fr;
+        gap: 30px;
+      }
+
+      @media (max-width: 900px) {
+        #app {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: 30px;
+        grid-column: 1 / -1;
+      }
+
+      h1 {
+        color: #2c3e50;
+        margin-bottom: 10px;
+        font-size: 2.5rem;
+      }
+
+      .subtitle {
+        color: #7f8c8d;
+        font-size: 1.1rem;
+      }
+
+      .timer-section {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .timer-container {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        border-radius: 15px;
+        padding: 25px;
+        color: white;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        margin-bottom: 25px;
+      }
+
+      .timer-display {
+        font-size: 3.5rem;
+        font-weight: bold;
+        text-align: center;
+        margin: 20px 0;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        font-family: 'Courier New', monospace;
+      }
+
+      .timer-controls {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+      }
+
+      button {
+        padding: 12px 25px;
+        border: none;
+        border-radius: 50px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .start-btn {
+        background: linear-gradient(to right, #2ecc71, #1abc9c);
+        color: white;
+      }
+
+      .start-btn:hover {
+        background: linear-gradient(to right, #27ae60, #16a085);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .stop-btn {
+        background: linear-gradient(to right, #e74c3c, #c0392b);
+        color: white;
+      }
+
+      .stop-btn:hover {
+        background: linear-gradient(to right, #c0392b, #a23526);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .reset-btn {
+        background: linear-gradient(to right, #7f8c8d, #95a5a6);
+        color: white;
+      }
+
+      .reset-btn:hover {
+        background: linear-gradient(to right, #95a5a6, #bdc3c7);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .current-status {
+        text-align: center;
+        margin: 20px 0;
+        padding: 15px;
+        border-radius: 10px;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.2);
+        box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+      }
+
+      .focusing {
+        color: #ffeb3b;
+      }
+
+      .idle {
+        color: #ddd;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+      }
+
+      .stat-card {
+        background: linear-gradient(135deg, #9b59b6, #8e44ad);
+        color: white;
+        padding: 20px;
+        border-radius: 15px;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .stat-card.week {
+        background: linear-gradient(135deg, #e67e22, #d35400);
+      }
+
+      .stat-card.month {
+        background: linear-gradient(135deg, #2ecc71, #27ae60);
+      }
+
+      .stat-card.all {
+        background: linear-gradient(135deg, #34495e, #2c3e50);
+        grid-column: 1 / -1;
+      }
+
+      .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin: 10px 0;
+      }
+
+      .stat-label {
+        font-size: 1rem;
+        opacity: 0.9;
+      }
+
+      .calendar-section {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .calendar-nav {
+        display: flex;
+        gap: 15px;
+      }
+
+      .nav-btn {
+        background: #3498db;
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .nav-btn:hover {
+        background: #2980b9;
+        transform: scale(1.1);
+      }
+
+      .calendar-title {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #2c3e50;
+      }
+
+      .calendar {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 8px;
+      }
+
+      .weekday {
+        text-align: center;
+        font-weight: 600;
+        color: #7f8c8d;
+        padding: 10px;
+      }
+
+      .calendar-day {
+        aspect-ratio: 1;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 10px;
+        background: #f8f9fa;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        cursor: pointer;
+      }
+
+      .calendar-day:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .day-number {
+        font-size: 1.2rem;
+        font-weight: 600;
+        align-self: flex-end;
+      }
+
+      .focus-time {
+        font-size: 0.9rem;
+        color: #7f8c8d;
+        text-align: center;
+      }
+
+      .other-month {
+        opacity: 0.4;
+      }
+
+      .today {
+        border: 2px solid #3498db;
+      }
+
+      .color-legend {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.9rem;
+      }
+
+      .legend-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+      }
+
+      .instructions {
+        margin-top: 30px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        grid-column: 1 / -1;
+      }
+
+      .instructions h3 {
+        margin-bottom: 15px;
+        color: #2c3e50;
+      }
+
+      .instructions ul {
+        list-style-type: none;
+      }
+
+      .instructions li {
+        margin-bottom: 10px;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .instructions i {
+        color: #3498db;
+        margin-top: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <!-- 顶部标题区 -->
+      <header>
+        <h1>专注时长追踪日历</h1>
+        <p class="subtitle">记录您的每日专注时间，生成日历热力图</p>
+      </header>
+
+      <!-- 计时器与统计区 -->
+      <section class="timer-section">
+        <!-- 计时器操作面板 -->
+        <div class="timer-container">
+          <div class="timer-display">{{ formatTime(elapsedTime) }}</div>
+          <div class="current-status" :class="isFocusing ? 'focusing' : 'idle'">
+            <i :class="isFocusing ? 'fa-solid fa-hourglass-half' : 'fa-solid fa-hourglass-end'"></i>
+            {{ statusMessage }}
+          </div>
+          <div class="timer-controls">
+            <button class="start-btn" @click="startTimer" :disabled="isFocusing">
+              <i class="fa-solid fa-play"></i>开始专注
+            </button>
+            <button class="stop-btn" @click="stopTimer" :disabled="!isFocusing">
+              <i class="fa-solid fa-stop"></i>结束专注
+            </button>
+            <button class="reset-btn" @click="resetTimer">
+              <i class="fa-solid fa-rotate"></i>重置
+            </button>
+          </div>
+        </div>
+
+        <!-- 各类专注时长统计卡片 -->
+        <div class="stats">
+          <div class="stat-card">
+            <div class="stat-label">今日专注</div>
+            <div class="stat-value">{{ formatTime(todayTotal) }}</div>
+          </div>
+          <div class="stat-card week">
+            <div class="stat-label">本周专注</div>
+            <div class="stat-value">{{ formatTime(weekTotal) }}</div>
+          </div>
+          <div class="stat-card month">
+            <div class="stat-label">本月专注</div>
+            <div class="stat-value">{{ formatTime(monthTotal) }}</div>
+          </div>
+          <div class="stat-card all">
+            <div class="stat-label">总专注时长</div>
+            <div class="stat-value">{{ formatTime(totalFocusTime) }}</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 日历区（含月份切换、日历格子、颜色图例） -->
+      <section class="calendar-section">
+        <!-- 日历头部：月份与切换按钮 -->
+        <div class="calendar-header">
+          <div class="calendar-nav">
+            <div class="nav-btn" @click="prevMonth">
+              <i class="fa-solid fa-chevron-left"></i>
+            </div>
+            <div class="nav-btn" @click="nextMonth">
+              <i class="fa-solid fa-chevron-right"></i>
+            </div>
+          </div>
+          <div class="calendar-title">{{ calendarTitle }}</div>
+          <div class="nav-btn" @click="resetToToday">
+            <i class="fa-solid fa-calendar-day"></i>
+          </div>
+        </div>
+
+        <!-- 日历主体：星期标题+日期格子 -->
+        <div class="calendar">
+          <div class="weekday" v-for="day in weekdays">{{ day }}</div>
+          <div
+            v-for="day in calendarDays"
+            :key="day.id"
+            class="calendar-day"
+            :class="{ 'other-month': !day.isCurrentMonth, 'today': day.isToday }"
+            :style="{ backgroundColor: day.color }"
+            @click="showDayDetails(day)"
+          >
+            <div class="day-number">{{ day.date.getDate() }}</div>
+            <div class="focus-time" v-if="day.focusTime > 0">
+              {{ formatTime(day.focusTime, true) }}
+            </div>
+          </div>
+        </div>
+
+        <!-- 日历颜色图例 -->
+        <div class="color-legend">
+          <div class="legend-item">
+            <div class="legend-color" style="background-color: #e8f5e9"></div>
+            <span>0-30分钟</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background-color: #a5d6a7"></div>
+            <span>30-60分钟</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background-color: #4caf50"></div>
+            <span>1-2小时</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background-color: #2e7d32"></div>
+            <span>2+小时</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 使用说明区 -->
+      <div class="instructions">
+        <h3><i class="fa-solid fa-circle-info"></i> 使用说明</h3>
+        <ul>
+          <li><i class="fa-solid fa-play"></i> 点击"开始专注"按钮开始计时</li>
+          <li><i class="fa-solid fa-stop"></i> 点击"结束专注"按钮停止计时并保存数据</li>
+          <li><i class="fa-solid fa-calendar-day"></i> 日历中颜色越深表示当天专注时间越长</li>
+          <li><i class="fa-solid fa-rotate"></i> 数据会自动保存在浏览器本地存储中</li>
+        </ul>
+      </div>
+    </div>
+
+    <script>
+      // 引入Vue 3的核心API
+      const { createApp, ref, computed, onMounted, watch } = Vue
+
+      // 创建Vue应用
+      createApp({
+        setup() {
+          // 是否正在专注计时
+          const isFocusing = ref(false)
+          // 计时开始的时间戳
+          const startTime = ref(null)
+          // 当前已计时的秒数
+          const elapsedTime = ref(0)
+          // 计时器interval句柄
+          const timerInterval = ref(null)
+          // 所有日期的专注数据（对象，key为日期字符串，value为秒数）
+          const focusData = ref({})
+          // 当前日历显示的日期（用于切换月份）
+          const currentDate = ref(new Date())
+
+          // 星期标题
+          const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+
+          // 初始化，加载本地存储数据，并启动计时器刷新
+          onMounted(() => {
+            loadData()
+            // 每秒刷新一次计时器显示
+            timerInterval.value = setInterval(() => {
+              if (isFocusing.value) {
+                elapsedTime.value = Math.floor((Date.now() - startTime.value) / 1000)
+              }
+            }, 1000)
+          })
+
+          // 从localStorage加载专注数据
+          const loadData = () => {
+            const savedData = localStorage.getItem('focusData')
+            if (savedData) {
+              focusData.value = JSON.parse(savedData)
+            }
+          }
+
+          // 保存专注数据到localStorage
+          const saveData = () => {
+            localStorage.setItem('focusData', JSON.stringify(focusData.value))
+          }
+
+          // 开始专注计时
+          const startTimer = () => {
+            isFocusing.value = true
+            // 若已计时，继续累加，否则从0开始
+            startTime.value = Date.now() - elapsedTime.value * 1000
+          }
+
+          // 停止计时并保存今日专注时长
+          const stopTimer = () => {
+            isFocusing.value = false
+            const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD格式
+
+            // 若今日无数据则初始化为0
+            if (!focusData.value[today]) {
+              focusData.value[today] = 0
+            }
+            // 累加今日专注秒数
+            focusData.value[today] += elapsedTime.value
+
+            saveData()
+            elapsedTime.value = 0
+          }
+
+          // 重置计时器，不保存数据
+          const resetTimer = () => {
+            isFocusing.value = false
+            elapsedTime.value = 0
+          }
+
+          // 格式化秒数为“时:分:秒”或“xh ym”
+          const formatTime = (seconds, short = false) => {
+            const hrs = Math.floor(seconds / 3600)
+            const mins = Math.floor((seconds % 3600) / 60)
+            const secs = seconds % 60
+
+            if (short) {
+              if (hrs > 0) return `${hrs}h ${mins}m`
+              return `${mins}m`
+            }
+
+            return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+          }
+
+          // 计时状态提示文本
+          const statusMessage = computed(() => {
+            return isFocusing.value ? '专注中...保持注意力集中！' : '准备开始专注计时'
+          })
+
+          // 今日专注总时长（秒）
+          const todayTotal = computed(() => {
+            const today = new Date().toISOString().split('T')[0]
+            return focusData.value[today] || 0
+          })
+
+          // 近7天专注总时长（秒）
+          const weekTotal = computed(() => {
+            const oneWeekAgo = new Date()
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+
+            return Object.entries(focusData.value).reduce((total, [date, seconds]) => {
+              const recordDate = new Date(date)
+              if (recordDate >= oneWeekAgo) {
+                return total + seconds
+              }
+              return total
+            }, 0)
+          })
+
+          // 本月专注总时长（秒）
+          const monthTotal = computed(() => {
+            const firstDayOfMonth = new Date()
+            firstDayOfMonth.setDate(1)
+
+            return Object.entries(focusData.value).reduce((total, [date, seconds]) => {
+              const recordDate = new Date(date)
+              if (recordDate >= firstDayOfMonth) {
+                return total + seconds
+              }
+              return total
+            }, 0)
+          })
+
+          // 所有历史专注总时长（秒）
+          const totalFocusTime = computed(() => {
+            return Object.values(focusData.value).reduce((total, seconds) => total + seconds, 0)
+          })
+
+          // 日历标题（如“2025年9月”）
+          const calendarTitle = computed(() => {
+            return `${currentDate.value.getFullYear()}年${currentDate.value.getMonth() + 1}月`
+          })
+
+          // 生成日历格子数据，包含上月/本月/下月的天数，及每天的专注时长和颜色
+          const calendarDays = computed(() => {
+            const year = currentDate.value.getFullYear()
+            const month = currentDate.value.getMonth()
+
+            // 本月第一天
+            const firstDay = new Date(year, month, 1)
+            // 本月最后一天
+            const lastDay = new Date(year, month + 1, 0)
+            // 本月第一天是星期几（0是周日）
+            const firstDayOfWeek = firstDay.getDay()
+            // 上个月的最后一天日期
+            const prevMonthLastDate = new Date(year, month, 0).getDate()
+
+            const days = []
+            const today = new Date()
+
+            // 补齐上月天数
+            for (let i = firstDayOfWeek - 0; i > 0; i--) {
+              const date = new Date(year, month - 1, prevMonthLastDate - i + 1)
+              const dateStr = date.toISOString().split('T')[0]
+              const focusTime = focusData.value[dateStr] || 0
+
+              days.push({
+                id: `prev-${i}`,
+                date: date,
+                isCurrentMonth: false,
+                isToday: false,
+                focusTime: focusTime,
+                color: getDayColor(focusTime),
+              })
+            }
+
+            // 本月天数
+            for (let i = 1; i <= lastDay.getDate(); i++) {
+              const date = new Date(year, month, i)
+              const dateStr = date.toISOString().split('T')[0]
+              const focusTime = focusData.value[dateStr] || 0
+              const isToday = date.toDateString() === today.toDateString()
+
+              days.push({
+                id: `current-${i}`,
+                date: date,
+                isCurrentMonth: true,
+                isToday: isToday,
+                focusTime: focusTime,
+                color: getDayColor(focusTime),
+              })
+            }
+
+            // 补齐下月天数，保证日历为6行7列
+            const totalCells = 42 // 6行7列
+            const nextMonthDays = totalCells - days.length
+            for (let i = 1; i <= nextMonthDays; i++) {
+              const date = new Date(year, month + 1, i)
+              const dateStr = date.toISOString().split('T')[0]
+              const focusTime = focusData.value[dateStr] || 0
+
+              days.push({
+                id: `next-${i}`,
+                date: date,
+                isCurrentMonth: false,
+                isToday: false,
+                focusTime: focusTime,
+                color: getDayColor(focusTime),
+              })
+            }
+
+            return days
+          })
+
+          // 根据专注分钟数返回不同的颜色（用于日历热力图）
+          const getDayColor = (focusSeconds) => {
+            const focusMinutes = focusSeconds / 60
+
+            if (focusMinutes === 0) return '#f8f9fa' // 无专注
+            if (focusMinutes < 30) return '#e8f5e9' // 0-30分钟
+            if (focusMinutes < 60) return '#a5d6a7' // 30-60分钟
+            if (focusMinutes < 120) return '#4caf50' // 1-2小时
+            return '#2e7d32' // 2小时以上
+          }
+
+          // 切换到上一个月
+          const prevMonth = () => {
+            currentDate.value = new Date(
+              currentDate.value.getFullYear(),
+              currentDate.value.getMonth() - 1,
+              1,
+            )
+          }
+
+          // 切换到下一个月
+          const nextMonth = () => {
+            currentDate.value = new Date(
+              currentDate.value.getFullYear(),
+              currentDate.value.getMonth() + 1,
+              1,
+            )
+          }
+
+          // 回到今天所在的月份
+          const resetToToday = () => {
+            currentDate.value = new Date()
+          }
+
+          // 点击日历某一天，弹窗显示该天专注时长
+          const showDayDetails = (day) => {
+            alert(
+              `${day.date.getFullYear()}年${day.date.getMonth() + 1}月${day.date.getDate()}日\n专注时长: ${formatTime(day.focusTime)}`,
+            )
+          }
+
+          // 暴露给模板使用的变量和方法
+          return {
+            isFocusing,
+            elapsedTime,
+            startTimer,
+            stopTimer,
+            resetTimer,
+            formatTime,
+            statusMessage,
+            todayTotal,
+            weekTotal,
+            monthTotal,
+            totalFocusTime,
+            weekdays,
+            calendarTitle,
+            calendarDays,
+            prevMonth,
+            nextMonth,
+            resetToToday,
+            showDayDetails,
+          }
+        },
+      }).mount('#app')
+    </script>
+  </body>
+</html>
