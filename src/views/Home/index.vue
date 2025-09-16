@@ -5,7 +5,10 @@
 
 <template>
   <div>111</div>
-  <focus />
+  <!-- <focus /> -->
+  <!-- <notepad /> -->
+  <!-- <heatMap /> -->
+  <musicePlayer />
 </template>
 
 <style scoped></style>
