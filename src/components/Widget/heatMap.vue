@@ -3,34 +3,34 @@
     <!-- 月份切换头部 -->
     <div class="calendar-header">
       <button class="nav-button" @click="prevMonth" title="上个月">◀</button>
-      <h3>{{ currentYear }}年{{ currentMonth }}月</h3>
+      <h3>{{ title }}</h3>
       <button class="nav-button" @click="nextMonth" title="下个月">▶</button>
     </div>
 
     <div class="calendar-weekdays">
-      <div v-for="day in ['日', '一', '二', '三', '四', '五', '六']" :key="day" class="weekday">
+      <div
+        v-for="day in ['日', '一', '二', '三', '四', '五', '六']"
+        :key="day"
+        class="weekday"
+      >
         {{ day }}
       </div>
     </div>
 
     <div class="calendar-grid">
       <div
-        v-for="(day, index) in calendarDays"
+        v-for="(day, index) in state.dateCount"
         :key="index"
         class="calendar-day"
-        :class="{
-          'other-month': !day.isCurrentMonth,
-          today: day.isToday,
-        }"
       >
         <div class="day-content">
-          <div v-if="day.isCurrentMonth" class="day-number">{{ day.date.getDate() }}</div>
           <div
-            v-if="day.isCurrentMonth"
-            class="day-indicator"
-            :style="{ backgroundColor: getDayColor(day.date) }"
-            :title="getDayTitle(day.date)"
-          ></div>
+            class="day-number day-indicator"
+            :class="{ today: isToday(day) }"
+            :style="{ backgroundColor: getDayColor(day) }"
+          >
+            {{ filterDate(day) }}
+          </div>
         </div>
       </div>
     </div>
@@ -38,7 +38,10 @@
     <!-- 图例 -->
     <div class="legend">
       <div class="legend-item" v-for="item in legendItems" :key="item.label">
-        <div class="legend-color" :style="{ backgroundColor: item.color }"></div>
+        <div
+          class="legend-color"
+          :style="{ backgroundColor: item.color }"
+        ></div>
         <span>{{ item.label }}</span>
       </div>
     </div>
@@ -46,33 +49,24 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 
-const currentDate = ref(new Date())
-
-// 月份切换函数
-const prevMonth = () => {
-  const newDate = new Date(currentDate.value)
-  newDate.setMonth(newDate.getMonth() - 1)
-  currentDate.value = newDate
-}
-
-const nextMonth = () => {
-  const newDate = new Date(currentDate.value)
-  newDate.setMonth(newDate.getMonth() + 1)
-  currentDate.value = newDate
-}
+const state = reactive({
+  curYear: null,
+  curMonth: null,
+  curDate: null,
+  dateCount: [],
+})
 
 // 计算属性
-const currentYear = computed(() => currentDate.value.getFullYear())
-const currentMonth = computed(() => currentDate.value.getMonth() + 1)
-
+const title = computed(() => {
+  return `${state.curYear}年${state.curMonth + 1}月`
+})
 // 模拟打卡数据 - 实际应该从 API 获取
 const focusData = ref({
   '2025-08-28': 2, // 8月数据
   '2025-08-15': 4,
   '2025-08-20': 6,
-
   '2025-09-01': 3, // 9月数据
   '2025-09-05': 1,
   '2025-09-10': 5,
@@ -96,65 +90,47 @@ const legendItems = ref([
   { color: '#f783ac', label: '7+次' },
 ])
 
+let curYEAR = new Date().getFullYear()
+let curMONTH = new Date().getMonth()
 // 生成日历天数数组
-const calendarDays = computed(() => {
-  const year = currentDate.value.getFullYear()
-  const month = currentDate.value.getMonth()
-  const firstDay = new Date(year, month, 1)
-  const lastDay = new Date(year, month + 1, 0)
-  const firstDayOfWeek = firstDay.getDay() // 0是周日
-  const daysInMonth = lastDay.getDate()
-
+onMounted(() => {
   const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  state.curYear = today.getFullYear()
+  state.curMonth = today.getMonth()
+  state.curDate = today.getDate()
 
-  const days = []
-
-  // 填充上个月的空格
-  const prevMonthLastDay = new Date(year, month, 0).getDate()
-  for (let i = firstDayOfWeek - 1; i >= 0; i--) {
-    const date = new Date(year, month - 1, prevMonthLastDay - i)
-    days.push({
-      date,
-      isCurrentMonth: false,
-      isToday: date.getTime() === today.getTime(),
-    })
-  }
-
-  // 填充当前月的天数
-  for (let i = 1; i <= daysInMonth; i++) {
-    const date = new Date(year, month, i)
-    date.setHours(0, 0, 0, 0)
-    days.push({
-      date,
-      isCurrentMonth: true,
-      isToday: date.getTime() === today.getTime(),
-    })
-  }
-
-  // 填充下个月的空格（补齐6行42天）
-  const totalCells = 42 // 6行 * 7天
-  const remainingCells = totalCells - days.length
-  for (let i = 1; i <= remainingCells; i++) {
-    const date = new Date(year, month + 1, i)
-    days.push({
-      date,
-      isCurrentMonth: false,
-      isToday: date.getTime() === today.getTime(),
-    })
-  }
-
-  return days
+  getDateCount()
 })
+
+const getDateCount = () => {
+  const count = new Date(state.curYear, state.curMonth + 1, 0).getDate()
+  const firstDay = new Date(state.curYear, state.curMonth, 1).getDay()
+  for (let i = 0; i < count + firstDay; i++) {
+    let val = i - firstDay
+    state.dateCount.push(val)
+  }
+}
+
+const filterDate = (date) => {
+  return date > 0 ? date : null
+}
+
+const isToday = (date) => {
+  return (
+    state.curYear === curYEAR &&
+    state.curMonth === curMONTH &&
+    date === state.curDate
+  )
+}
 
 // 获取日期字符串（YYYY-MM-DD格式）
 const getDateString = (date) => {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  if (date <= 0) return null
+  // 修复：确保月份和日期都是两位数
+  const month = (state.curMonth + 1).toString().padStart(2, '0')
+  const day = date.toString().padStart(2, '0')
+  return `${state.curYear}-${month}-${day}`
 }
-
 // 获取某天的颜色
 const getDayColor = (date) => {
   const dateStr = getDateString(date)
@@ -167,18 +143,19 @@ const getDayColor = (date) => {
   return '#f783ac'
 }
 
-// 获取某天的提示信息
-const getDayTitle = (date) => {
-  const dateStr = getDateString(date)
-  const count = focusData.value[dateStr] || 0
-  return `${dateStr}: ${count}次专注`
-}
+// // 获取某天的提示信息
+// const getDayTitle = (date) => {
+//   const dateStr = getDateString(date)
+//   const count = focusData.value[dateStr] || 0
+//   return `${dateStr}: ${count}次专注`
+// }
 </script>
 
 <style scoped>
 .mini-calendar {
   max-width: 260px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: white;
   border-radius: 12px;
   padding: 16px;
@@ -297,7 +274,7 @@ const getDayTitle = (date) => {
   font-weight: 700;
 }
 
-.today .day-indicator {
+.today {
   border: 2px solid #f06595;
 }
 

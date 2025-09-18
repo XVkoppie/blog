@@ -7,8 +7,9 @@
   <div>111</div>
   <!-- <focus /> -->
   <!-- <notepad /> -->
-  <!-- <heatMap /> -->
-  <musicePlayer />
+  <heatMap />
+  <!-- <musicePlayer /> -->
+  <!-- <calendar /> -->
 </template>
 
 <style scoped></style>
