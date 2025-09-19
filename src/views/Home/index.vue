@@ -5,7 +5,7 @@
 
 <template>
   <div>111</div>
-  <!-- <focus /> -->
+  <focus />
   <!-- <notepad /> -->
   <heatMap />
   <!-- <musicePlayer /> -->

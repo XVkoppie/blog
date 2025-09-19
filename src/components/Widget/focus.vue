@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useTimeStore } from '@/stores'
 import { onUnmounted, ref } from 'vue'
 
 const started = ref(false)
@@ -9,6 +10,7 @@ const paused = ref(false)
 let animTimeout: ReturnType<typeof setTimeout> | null = null
 let animInterval: ReturnType<typeof setInterval> | null = null
 let timeInterval: ReturnType<typeof setInterval> | null = null
+const timeStore = useTimeStore()
 
 const formatTime = (sec) => {
   const m = Math.floor(sec / 60)
@@ -34,6 +36,11 @@ const start = () => {
 const stop = () => {
   if (!started.value) return
   started.value = false
+  timeStore.setFocusTime(
+    new Date().toISOString().split('T')[0],
+    timer.value / 60,
+  )
+  console.log('🚀 ~ stop ~ new Date().toISOString():', new Date().toISOString())
   if (animTimeout) clearTimeout(animTimeout)
   if (animInterval) clearInterval(animInterval)
   if (timeInterval) clearInterval(timeInterval)
@@ -74,7 +81,11 @@ onUnmounted(() => {
         <img src="../../assets/image/pixil-frame-0.png" alt="" />
       </div>
       <div v-else>
-        <img v-if="currentImg" src="../../assets/image/pixil-frame-1.png" alt="" />
+        <img
+          v-if="currentImg"
+          src="../../assets/image/pixil-frame-1.png"
+          alt=""
+        />
         <img v-else src="../../assets/image/pixil-frame-2.png" alt="" />
         <div
           :style="{
@@ -102,19 +113,36 @@ onUnmounted(() => {
           margin-top: 10px;
         "
       >
-        <button v-if="!started" class="btn" style="background-color: #8ebd20" @click="start">
+        <button
+          v-if="!started"
+          class="btn"
+          style="background-color: #8ebd20"
+          @click="start"
+        >
           start
         </button>
         <div v-else>
-          <button v-if="!paused" class="btn" style="background-color: #e02a29" @click="pause">
+          <button
+            v-if="!paused"
+            class="btn"
+            style="background-color: #e02a29"
+            @click="pause"
+          >
             pause
           </button>
-          <button v-else @click="continueFn" class="btn" style="background-color: #e02a29">
+          <button
+            v-else
+            @click="continueFn"
+            class="btn"
+            style="background-color: #e02a29"
+          >
             continue
           </button>
         </div>
 
-        <button @click="stop" class="btn" style="background-color: #f8e22d">stop</button>
+        <button @click="stop" class="btn" style="background-color: #f8e22d">
+          stop
+        </button>
       </div>
     </div>
   </div>

@@ -1,12 +1,22 @@
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
-export const useTimeStore = defineStore('time', () => {
-  const count = ref(0)
-  const doubleCount = computed(() => count.value * 2)
-  function increment() {
-    count.value++
-  }
+export const useTimeStore = defineStore(
+  'time',
+  () => {
+    const focusTime = ref([])
 
-  return { count, doubleCount, increment }
-})
+    const setFocusTime = (date, time) => {
+      const index = focusTime.value.findIndex((item) => item.date === date)
+      if (index !== -1) {
+        focusTime.value[index].time += time
+      } else {
+        focusTime.value.push({ date, time })
+      }
+    }
+    return { focusTime, setFocusTime }
+  },
+  {
+    persist: true,
+  },
+)

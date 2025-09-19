@@ -137,9 +137,9 @@ const getDayColor = (date) => {
   const count = focusData.value[dateStr] || 0
 
   if (count === 0) return '#ffffff'
-  if (count <= 2) return '#ffdeeb'
-  if (count <= 4) return '#fcc2d7'
-  if (count <= 6) return '#faa2c1'
+  if (count <= 20) return '#ffdeeb'
+  if (count <= 40) return '#fcc2d7'
+  if (count <= 60) return '#faa2c1'
   return '#f783ac'
 }
 
