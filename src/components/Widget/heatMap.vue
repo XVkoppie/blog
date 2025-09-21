@@ -2,9 +2,13 @@
   <div class="mini-calendar">
     <!-- 月份切换头部 -->
     <div class="calendar-header">
-      <button class="nav-button" @click="prevMonth" title="上个月">◀</button>
+      <button class="nav-button" @click="changeM('prev')" title="上个月">
+        ◀
+      </button>
       <h3>{{ title }}</h3>
-      <button class="nav-button" @click="nextMonth" title="下个月">▶</button>
+      <button class="nav-button" @click="changeM('next')" title="下个月">
+        ▶
+      </button>
     </div>
 
     <div class="calendar-weekdays">
@@ -22,11 +26,18 @@
         v-for="(day, index) in state.dateCount"
         :key="index"
         class="calendar-day"
+        @click="activeIndex = index"
       >
         <div class="day-content">
           <div
-            class="day-number day-indicator"
-            :class="{ today: isToday(day) }"
+            class="day-number"
+            :class="{
+              'day-indicator': day > 0,
+              today:
+                activeIndex === index
+                  ? true
+                  : isToday(day) && activeIndex === null,
+            }"
             :style="{ backgroundColor: getDayColor(day) }"
           >
             {{ filterDate(day) }}
@@ -49,8 +60,9 @@
 </template>
 
 <script setup>
+import { useTimeStore } from '@/stores'
 import { ref, computed, reactive, onMounted } from 'vue'
-
+const activeIndex = ref(null)
 const state = reactive({
   curYear: null,
   curMonth: null,
@@ -63,31 +75,15 @@ const title = computed(() => {
   return `${state.curYear}年${state.curMonth + 1}月`
 })
 // 模拟打卡数据 - 实际应该从 API 获取
-const focusData = ref({
-  '2025-08-28': 2, // 8月数据
-  '2025-08-15': 4,
-  '2025-08-20': 6,
-  '2025-09-01': 3, // 9月数据
-  '2025-09-05': 1,
-  '2025-09-10': 5,
-  '2025-09-15': 2,
-  '2025-09-20': 7,
-  '2025-09-25': 4,
-  '2025-09-28': 8,
-  '2025-09-30': 6,
-
-  '2025-10-05': 3, // 10月数据
-  '2025-10-12': 5,
-  '2025-10-20': 2,
-})
+const timeStore = useTimeStore()
 
 // 图例项
 const legendItems = ref([
-  { color: '#ffffff', label: '0次' },
-  { color: '#ffdeeb', label: '1-2次' },
-  { color: '#fcc2d7', label: '3-4次' },
-  { color: '#faa2c1', label: '5-6次' },
-  { color: '#f783ac', label: '7+次' },
+  { color: '#ffffff', label: '0-10' },
+  { color: '#ffdeeb', label: '11-30' },
+  { color: '#fcc2d7', label: '31-40' },
+  { color: '#faa2c1', label: '41-80' },
+  { color: '#f783ac', label: '1+' },
 ])
 
 let curYEAR = new Date().getFullYear()
@@ -105,7 +101,7 @@ onMounted(() => {
 const getDateCount = () => {
   const count = new Date(state.curYear, state.curMonth + 1, 0).getDate()
   const firstDay = new Date(state.curYear, state.curMonth, 1).getDay()
-  for (let i = 0; i < count + firstDay; i++) {
+  for (let i = 1; i <= count + firstDay; i++) {
     let val = i - firstDay
     state.dateCount.push(val)
   }
@@ -134,7 +130,8 @@ const getDateString = (date) => {
 // 获取某天的颜色
 const getDayColor = (date) => {
   const dateStr = getDateString(date)
-  const count = focusData.value[dateStr] || 0
+  const count =
+    timeStore.focusTime.find((item) => item.date === dateStr)?.time || 0
 
   if (count === 0) return '#ffffff'
   if (count <= 20) return '#ffdeeb'
@@ -143,6 +140,23 @@ const getDayColor = (date) => {
   return '#f783ac'
 }
 
+const changeM = (type) => {
+  state.dateCount = []
+  if (type === 'prev') {
+    state.curMonth--
+    if (state.curMonth < 0) {
+      state.curMonth = 11
+      state.curYear--
+    }
+  } else {
+    state.curMonth++
+    if (state.curMonth > 11) {
+      state.curMonth = 0
+      state.curYear++
+    }
+  }
+  getDateCount()
+}
 // // 获取某天的提示信息
 // const getDayTitle = (date) => {
 //   const dateStr = getDateString(date)
